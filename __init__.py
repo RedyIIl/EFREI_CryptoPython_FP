@@ -5,10 +5,32 @@ app = Flask(__name__)
 
 @app.route('/')
 def hello_world():
-    # Affiche un formulaire pour saisir la clé et la valeur à chiffrer
+    return "Bienvenue sur la page d'accueil. Allez sur /encrypt pour chiffrer des données."
+
+@app.route('/encrypt', methods=['GET', 'POST'])
+def encryptage():
+    if request.method == 'POST':
+        # Récupère la clé de l'utilisateur et la valeur à chiffrer
+        user_key = request.form.get('key')
+        valeur = request.form.get('valeur')
+
+        if not user_key or not valeur:
+            return "Erreur : clé ou valeur manquante", 400
+
+        try:
+            # Crée un objet Fernet avec la clé fournie
+            f = Fernet(user_key)
+            # Convertir la valeur en bytes et la chiffrer
+            valeur_bytes = valeur.encode()
+            token = f.encrypt(valeur_bytes)
+            return f"Valeur encryptée : {token.decode()}"
+        except Exception as e:
+            return f"Erreur lors de l'encryptage : {str(e)}", 400
+
+    # Si la méthode est GET, affiche le formulaire
     return render_template_string('''
         <form action="/encrypt" method="POST">
-            <label for="key">Entrez votre clé de chiffrement :</label>
+            <label for="key">Entrez votre clé de chiffrement (base64) :</label>
             <input type="text" id="key" name="key" required><br><br>
 
             <label for="valeur">Entrez la valeur à chiffrer :</label>
@@ -17,22 +39,6 @@ def hello_world():
             <input type="submit" value="Chiffrer">
         </form>
     ''')
-
-@app.route('/encrypt', methods=['POST'])
-def encryptage():
-    user_key = request.form.get('key')  # Récupère la clé de l'utilisateur
-    valeur = request.form.get('valeur')  # Récupère la valeur à chiffrer
-
-    if not user_key or not valeur:
-        return "Erreur : clé ou valeur manquante", 400
-
-    try:
-        f = Fernet(user_key)  # Crée un objet Fernet avec la clé fournie
-        valeur_bytes = valeur.encode()  # Conversion str -> bytes
-        token = f.encrypt(valeur_bytes)  # Encrypt la valeur
-        return f"Valeur encryptée : {token.decode()}"  # Retourne le token en str
-    except Exception as e:
-        return f"Erreur lors de l'encryptage : {str(e)}", 400  # Si la clé est invalide
 
 if __name__ == "__main__":
     app.run(debug=True)
