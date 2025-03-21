@@ -1,14 +1,22 @@
 from cryptography.fernet import Fernet
-from flask import Flask, render_template_string, render_template, jsonify, request
-from flask import render_template
-from flask import json
-import sqlite3
+from flask import Flask, render_template_string, request
 
 app = Flask(__name__)
 
 @app.route('/')
 def hello_world():
-    return render_template('hello.html')  # Page d'accueil
+    # Affiche un formulaire pour saisir la clé et la valeur à chiffrer
+    return render_template_string('''
+        <form action="/encrypt" method="POST">
+            <label for="key">Entrez votre clé de chiffrement :</label>
+            <input type="text" id="key" name="key" required><br><br>
+
+            <label for="valeur">Entrez la valeur à chiffrer :</label>
+            <input type="text" id="valeur" name="valeur" required><br><br>
+
+            <input type="submit" value="Chiffrer">
+        </form>
+    ''')
 
 @app.route('/encrypt', methods=['POST'])
 def encryptage():
@@ -25,22 +33,6 @@ def encryptage():
         return f"Valeur encryptée : {token.decode()}"  # Retourne le token en str
     except Exception as e:
         return f"Erreur lors de l'encryptage : {str(e)}", 400  # Si la clé est invalide
-
-@app.route('/decrypt', methods=['POST'])
-def decryptage():
-    user_key = request.form.get('key')  # Récupère la clé de l'utilisateur
-    token = request.form.get('token')  # Récupère le token à déchiffrer
-
-    if not user_key or not token:
-        return "Erreur : clé ou token manquants", 400
-
-    try:
-        f = Fernet(user_key)  # Crée un objet Fernet avec la clé fournie
-        token_bytes = token.encode()  # Conversion str -> bytes
-        decrypted_value = f.decrypt(token_bytes)  # Déchiffre la valeur
-        return f"Valeur décryptée : {decrypted_value.decode()}"  # Retourne la valeur décryptée
-    except Exception as e:
-        return f"Erreur de décryptage : {str(e)}", 400  # Si la clé ou le token est invalide
 
 if __name__ == "__main__":
     app.run(debug=True)
